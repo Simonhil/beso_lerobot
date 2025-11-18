@@ -9,9 +9,17 @@ import torchvision
 from torch import Tensor, nn
 from .utils import append_dims, make_sample_density, get_sigmas_exponential, sample_ddim
 from .beso_transformer import Noise_Dec_only
-from lerobot.constants import ACTION, OBS_ENV_STATE, OBS_IMAGES, OBS_STATE
+from lerobot.utils.constants import ACTION, OBS_ENV_STATE, OBS_IMAGES, OBS_STATE
 from .beso_config import BesoConfig
-from lerobot.policies.normalize import Normalize, Unnormalize
+from lerobot.processor import (
+    AddBatchDimensionProcessorStep,
+    DeviceProcessorStep,
+    NormalizerProcessorStep,
+    PolicyAction,
+    PolicyProcessorPipeline,
+    RenameObservationsProcessorStep,
+    UnnormalizerProcessorStep,
+)
 from lerobot.policies.pretrained import PreTrainedPolicy
 from lerobot.policies.utils import (
     get_device_from_parameters,
@@ -44,14 +52,14 @@ class BesoPolicy(PreTrainedPolicy):
         super().__init__(config)
         config.validate_features()
         self.config = config
-        self.normalize_inputs = Normalize(config.input_features, config.normalization_mapping, dataset_stats)
-        self.normalize_targets = Normalize(
+        self.normalize_inputs = NormalizerProcessorStep(config.input_features, config.normalization_mapping, dataset_stats)
+        self.normalize_targets = NormalizerProcessorStep(
             config.output_features, config.normalization_mapping, dataset_stats
         )
-        self.unnormalize_outputs = Unnormalize(
+        self.unnormalize_outputs = UnnormalizerProcessorStep(
             config.output_features, config.normalization_mapping, dataset_stats
         )
-        self.unnormalize_inputs = Unnormalize(
+        self.unnormalize_inputs = UnnormalizerProcessorStep(
             config.input_features, config.normalization_mapping, dataset_stats
         )
         self.step_counter=0
